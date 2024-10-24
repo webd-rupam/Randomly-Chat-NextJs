@@ -95,49 +95,49 @@ const Chat = () => {
       </header>
 
       {/* Chat Box */}
-      <div className="flex-grow mt-4 bg-gray-800 rounded-lg p-4 w-full max-w-3xl overflow-hidden">
-        {/* Scrollable chat messages */}
-        <div className="space-y-6 lg:h-[478px] h-[537px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-800 mt-4">
-          {messages.map((item, index) => (
-            <div key={index} className="mb-6">
-              {item.id === id ? (
-                <div className="right flex justify-end">
-                  <div className="flex flex-col items-end space-y-1 w-full mt-2">
-                    <p className="text-sm text-blue-500">You:</p>
-                    <div className="bg-blue-500 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
-                      {item.message}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="left flex justify-start">
-                  <div className="flex flex-col items-start space-y-1 w-full mt-4">
-                    <p className="text-sm text-gray-400">Stranger:</p>
-                    <div className="bg-gray-600 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
-                      {item.message}
-                    </div>
-                  </div>
-                </div>
-              )}
+<div className="flex-grow mt-4 bg-gray-800 rounded-lg p-4 w-full max-w-3xl flex flex-col justify-between overflow-hidden">
+  {/* Scrollable chat messages */}
+  <div className="space-y-6 lg:h-[478px] h-[537px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-800 mt-4">
+    {messages.map((item, index) => (
+      <div key={index} className="mb-6">
+        {item.id === id ? (
+          <div className="right flex justify-end">
+            <div className="flex flex-col items-end space-y-1 w-full mt-2">
+              <p className="text-sm text-blue-500">You:</p>
+              <div className="bg-blue-500 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
+                {item.message}
+              </div>
             </div>
-          ))}
-          {/* Empty div to act as scroll target */}
-          <div ref={messageEndRef} />
-        </div>
-
-        {/* Display Stranger Status and "Find more" button if stranger left */}
-        <div className="text-center mt-2 text-gray-300">
-          {strangerStatus}
-          {strangerLeft && (
-            <button
-              onClick={handleFindMore}
-              className="ml-2 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-300"
-            >
-              Find more
-            </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="left flex justify-start">
+            <div className="flex flex-col items-start space-y-1 w-full mt-4">
+              <p className="text-sm text-gray-400">Stranger:</p>
+              <div className="bg-gray-600 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
+                {item.message}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+    ))}
+    {/* Empty div to act as scroll target */}
+    <div ref={messageEndRef} />
+  </div>
+
+  {/* Status Message and "Find more" button */}
+  <div className="mt-2 text-gray-300 w-full flex justify-center items-center flex-col">
+    <div className="text-sm md:text-base">{strangerStatus}</div>
+    {strangerLeft && (
+      <button
+        onClick={handleFindMore}
+        className="mt-2 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-300"
+      >
+        Find more
+      </button>
+    )}
+  </div>
+</div>
 
       {/* Input Box */}
       <div className="mt-4 w-full max-w-3xl">
