@@ -97,7 +97,7 @@ const Chat = () => {
       {/* Chat Box */}
       <div className="flex-grow mt-4 bg-gray-800 rounded-lg p-4 w-full max-w-3xl overflow-hidden">
         {/* Scrollable chat messages */}
-        <div className="space-y-6 lg:h-[478px] h-[510px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-800 mt-4">
+        <div className="space-y-6 lg:h-[478px] h-[537px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-800 mt-4">
           {messages.map((item, index) => (
             <div key={index} className="mb-6">
               {item.id === id ? (
