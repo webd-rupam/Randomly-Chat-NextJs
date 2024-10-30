@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import socketIO from "socket.io-client";
+import { auth } from "@/app/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 let socket;
 
@@ -26,51 +28,52 @@ const Chat = () => {
   };
 
   useEffect(() => {
-
     document.title = "Randomly - Chat with Stranger";
 
-    socket = socketIO(ENDPOINT);
+    // Check authentication status
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push("/login"); // Redirect to login page if not authenticated
+      } else {
+        // Initialize socket connection if authenticated
+        socket = socketIO(ENDPOINT);
 
-    socket.on("connect", () => {
-      setId(socket.id);
+        socket.on("connect", () => {
+          setId(socket.id);
+        });
+
+        socket.emit("joined");
+
+        socket.on("waiting", (data) => {
+          setStrangerStatus("Finding Stranger to talk... Have patience!");
+        });
+
+        socket.on("welcome", (data) => {
+          setMessages((prevMessages) => [...prevMessages, data]);
+          setStrangerStatus(""); // Clear waiting message when the second user joins
+        });
+
+        socket.on("strangerJoined", (data) => {
+          setStrangerStatus("Stranger has joined, say hi!"); // Show the message when the stranger joins
+          setStrangerLeft(false); // Reset the stranger left flag when a new stranger joins
+        });
+
+        socket.on("sendMessage", (data) => {
+          setMessages((prevMessages) => [...prevMessages, data]);
+        });
+
+        socket.on("leave", (data) => {
+          setStrangerStatus("Stranger has left the chat!"); // Update the status message
+          setStrangerLeft(true); // Enable "Find more" button
+        });
+
+        return () => {
+          socket.disconnect();
+        };
+      }
     });
 
-    socket.emit("joined");
-
-    socket.on("waiting", (data) => {
-      setStrangerStatus("Finding Stranger to talk... Have patience!"); // Exclamation mark added
-    });
-
-    socket.on("welcome", (data) => {
-      setMessages((prevMessages) => [...prevMessages, data]);
-      setStrangerStatus(""); // Clear waiting message when the second user joins
-    });
-
-    socket.on("strangerJoined", (data) => {
-      setStrangerStatus("Stranger has joined, say hi!"); // Show the message when the stranger joins
-      setStrangerLeft(false); // Reset the stranger left flag when a new stranger joins
-    });
-
-    socket.on("sendMessage", (data) => {
-      setMessages((prevMessages) => [...prevMessages, data]);
-    });
-
-    socket.on("leave", (data) => {
-      setStrangerStatus("Stranger has left the chat!"); // Update the status message
-      setStrangerLeft(true); // Enable "Find more" button
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  // Authentication check
-  useEffect(() => {
-    const token = document.cookie.split("; ").find((row) => row.startsWith("token="));
-    if (!token) {
-      router.push("/login"); // Redirect to login page if not authenticated
-    }
+    return () => unsubscribe(); // Clean up the listener
   }, [router]);
 
   // Scroll to the bottom whenever messages change
@@ -95,49 +98,49 @@ const Chat = () => {
       </header>
 
       {/* Chat Box */}
-<div className="flex-grow mt-4 bg-gray-800 rounded-lg p-4 w-full max-w-3xl flex flex-col justify-between overflow-hidden">
-  {/* Scrollable chat messages */}
-  <div className="space-y-6 lg:h-[478px] h-[537px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-800 mt-4">
-    {messages.map((item, index) => (
-      <div key={index} className="mb-6">
-        {item.id === id ? (
-          <div className="right flex justify-end">
-            <div className="flex flex-col items-end space-y-1 w-full mt-2">
-              <p className="text-sm text-blue-500">You:</p>
-              <div className="bg-blue-500 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
-                {item.message}
-              </div>
+      <div className="flex-grow mt-4 bg-gray-800 rounded-lg p-4 w-full max-w-3xl flex flex-col justify-between overflow-hidden">
+        {/* Scrollable chat messages */}
+        <div className="space-y-6 lg:h-[478px] h-[537px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-800 mt-4">
+          {messages.map((item, index) => (
+            <div key={index} className="mb-6">
+              {item.id === id ? (
+                <div className="right flex justify-end">
+                  <div className="flex flex-col items-end space-y-1 w-full mt-2">
+                    <p className="text-sm text-blue-500">You:</p>
+                    <div className="bg-blue-500 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
+                      {item.message}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="left flex justify-start">
+                  <div className="flex flex-col items-start space-y-1 w-full mt-4">
+                    <p className="text-sm text-gray-400">Stranger:</p>
+                    <div className="bg-gray-600 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
+                      {item.message}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="left flex justify-start">
-            <div className="flex flex-col items-start space-y-1 w-full mt-4">
-              <p className="text-sm text-gray-400">Stranger:</p>
-              <div className="bg-gray-600 text-white p-2 rounded-lg w-auto max-w-full break-words shadow-md">
-                {item.message}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    ))}
-    {/* Empty div to act as scroll target */}
-    <div ref={messageEndRef} />
-  </div>
+          ))}
+          {/* Empty div to act as scroll target */}
+          <div ref={messageEndRef} />
+        </div>
 
-  {/* Status Message and "Find more" button */}
-  <div className="mt-2 text-gray-300 w-full flex justify-center items-center flex-col">
-    <div className="text-sm md:text-base">{strangerStatus}</div>
-    {strangerLeft && (
-      <button
-        onClick={handleFindMore}
-        className="mt-2 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-300"
-      >
-        Find more
-      </button>
-    )}
-  </div>
-</div>
+        {/* Status Message and "Find more" button */}
+        <div className="mt-2 text-gray-300 w-full flex justify-center items-center flex-col">
+          <div className="text-sm md:text-base">{strangerStatus}</div>
+          {strangerLeft && (
+            <button
+              onClick={handleFindMore}
+              className="mt-2 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition duration-300"
+            >
+              Find more
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Input Box */}
       <div className="mt-4 w-full max-w-3xl">

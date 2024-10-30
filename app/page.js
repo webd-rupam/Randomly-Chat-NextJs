@@ -1,27 +1,46 @@
 "use client";
 import { useEffect, useState } from "react";
-import Head from 'next/head';
 import { useRouter } from "next/navigation";
 import { Typewriter } from 'react-simple-typewriter';
 import Link from 'next/link';
+import { auth, db } from "@/app/firebase";
+import { doc, getDoc } from 'firebase/firestore'; 
+import { onAuthStateChanged, signOut } from "firebase/auth";
+
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState(""); // State for user email
+  const [user, setUser] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
-    // Check if the token exists in the cookies
-    const token = document.cookie.split('; ').find(row => row.startsWith('token='));
-    if (token) {
-      setIsAuthenticated(true); // User is authenticated
-      // Assuming you can decode your token to get the email
-      const tokenValue = token.split('=')[1];
-      const user = JSON.parse(atob(tokenValue.split('.')[1])); // Decode JWT to get payload
-      setUserEmail(user.email.split("@")[0]); // Set the user email (adapt according to your token structure)
-    } else {
-      setIsAuthenticated(false); // User is not authenticated
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setIsAuthenticated(true);
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid)); 
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUser({
+              uid: currentUser.uid,
+              email: userData.email,
+              displayName: userData.displayName,
+              createdAt: userData.createdAt,
+            });
+          } else {
+            setUser(null);
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setUser(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe(); 
   }, []);
 
   const handleStartNow = () => {
@@ -32,46 +51,59 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    setIsAuthenticated(false);
-  }
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/"); // Redirect to home after logout
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
 
   return (
     <>
     <main className="relative flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
       {/* Top Buttons */}
       <div className="absolute top-4 w-full flex justify-between px-6 z-10">
-        {isAuthenticated ? (
-          <div className="w-full flex lg:flex-row lg:gap-0 flex-col gap-3 lg:justify-between items-center">
-            {/* Welcome Message on the Left */}
-            <p className="text-lg font-semibold text-white bg-gray-800 px-4 py-2 rounded-lg shadow-md flex items-center space-x-2">
-              <span className="text-white">Welcome,</span>
-              <span className="text-blue-400">{userEmail}</span>
-            </p>
+      {isAuthenticated ? (
+  <div className="w-full flex lg:flex-row lg:gap-0 flex-col gap-3 lg:justify-between items-center">
+    
+    {/* Welcome Message on the Left */}
+    <p className="text-lg font-semibold text-white bg-gray-800 px-4 py-2 rounded-lg shadow-md flex items-center space-x-2">
+      <span className="text-white">Welcome,</span>
+      <span className="text-blue-400">{user?.displayName || "User"}</span> {/* Use optional chaining */}
+    </p>
 
-            {/* Logout Button on the Right */}
-            <button
-              onClick={handleLogout}
-              className="lg:block hidden ml-auto lg:px-4 py-1 px-1 bg-red-500 hover:bg-red-700 text-white font-semibold rounded-md shadow-lg transition duration-300"
-            >
-              Logout
-            </button>
-          </div>
-        ) : (
-          <div className="ml-auto flex space-x-4">
-            <Link href="/signup">
-              <button className="lg:px-4 py-2 px-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md shadow-lg transition duration-300">
-                Sign up
-              </button>
-            </Link>
-            <Link href="/login">
-              <button className="lg:px-4 py-2 px-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-md shadow-lg transition duration-300">
-                Login
-              </button>
-            </Link>
-          </div>
-        )}
+    <button
+      onClick={handleLogout}
+      className="lg:hidden block lg:px-4 py-1 px-2 bg-red-500 hover:bg-red-700 text-white font-semibold rounded-md shadow-lg transition duration-300"
+    >
+      Logout
+    </button>
+
+    {/* Logout Button on the Right */}
+    <button
+      onClick={handleLogout}
+      className="lg:block hidden ml-auto lg:px-4 py-1 px-1 bg-red-500 hover:bg-red-700 text-white font-semibold rounded-md shadow-lg transition duration-300"
+    >
+      Logout
+    </button>
+  </div>
+) : (
+  <div className="ml-auto flex space-x-4">
+    <Link href="/signup">
+      <button className="lg:px-4 py-2 px-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md shadow-lg transition duration-300">
+        Sign up
+      </button>
+    </Link>
+    <Link href="/login">
+      <button className="lg:px-4 py-2 px-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-md shadow-lg transition duration-300">
+        Login
+      </button>
+    </Link>
+  </div>
+)}
+
       </div>
 
       {/* Hero Section */}
