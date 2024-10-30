@@ -12,7 +12,7 @@ This is the Next.js frontend portion of Randomly, a real-time anonymous chat app
 Features :-
 
 1.Real-time Messaging: Instant, real-time message exchange between users, enhancing engagement.
-2.nonymous Chat: Users are connected with strangers randomly, with no need to provide personal information.
+2.Anonymous Chat: Users are connected with strangers randomly, with no need to provide personal information.
 3.Responsive Design: Built with Tailwind CSS, the app adjusts beautifully across all screen sizes.
 4.Firebase Authentication: Users can sign in using Google, GitHub, or create an account, ensuring secure access alomg with forgot password feature.
 5.Socket-based Messaging: Real-time message handling powered by Express and Socket.IO (Socket server is located in the Randomly-SocketServer repository).
